@@ -4,27 +4,27 @@
         "displayName": "三等奖",
         "id": 1,
         "image": "images/1.png",
-        "priceName": "111",
-        "totalRounds": 3,
-        "winnersPerRound": 10
+        "priceName": "手机",
+        "totalRounds": 2,
+        "winnersPerRound": 20
     },
     {
         "allowUsedPeople": false,
         "displayName": "一等奖",
         "id": 2,
-        "image": "images/0.png",
-        "priceName": "333",
+        "image": "images/4.png",
+        "priceName": "电脑",
         "totalRounds": 2,
-        "winnersPerRound": 5
+        "winnersPerRound": 25
     },
     {
         "allowUsedPeople": false,
         "displayName": "二等奖",
         "id": 3,
         "image": "images/3.png",
-        "priceName": "222",
-        "totalRounds": 2,
-        "winnersPerRound": 10
+        "priceName": "扫地机器人",
+        "totalRounds": 1,
+        "winnersPerRound": 3
     },
     {
         "allowUsedPeople": true,
@@ -32,58 +32,31 @@
         "id": 4,
         "image": "images/default.png",
         "priceName": "66元红包",
-        "totalRounds": 6,
-        "winnersPerRound": 10
+        "totalRounds": 2,
+        "winnersPerRound": 20
     },
     {
         "allowUsedPeople": false,
-        "displayName": "新奖项1",
+        "displayName": "新奖项",
         "id": 5,
         "image": "images/default.png",
         "priceName": "奖品",
         "totalRounds": 1,
+        "winnersPerRound": 2
+    },
+    {
+        "allowUsedPeople": false,
+        "displayName": "新奖项1",
+        "id": 6,
+        "image": "images/default.png",
+        "priceName": "奖品",
+        "totalRounds": 1,
         "winnersPerRound": 1
     },
     {
         "allowUsedPeople": false,
-        "displayName": "新奖项",
-        "id": 6,
-        "image": "images/default.png",
-        "priceName": "奖品",
-        "totalRounds": 3,
-        "winnersPerRound": 10
-    },
-    {
-        "allowUsedPeople": true,
-        "displayName": "11231",
+        "displayName": "新奖项2",
         "id": 7,
-        "image": "images/default.png",
-        "priceName": "188",
-        "totalRounds": 1,
-        "winnersPerRound": 1
-    },
-    {
-        "allowUsedPeople": true,
-        "displayName": "新奖项123",
-        "id": 8,
-        "image": "images/default.png",
-        "priceName": "奖品",
-        "totalRounds": 1,
-        "winnersPerRound": 1
-    },
-    {
-        "allowUsedPeople": true,
-        "displayName": "新奖项1234",
-        "id": 9,
-        "image": "images/default.png",
-        "priceName": "奖品",
-        "totalRounds": 2,
-        "winnersPerRound": 10
-    },
-    {
-        "allowUsedPeople": true,
-        "displayName": "新奖项",
-        "id": 10,
         "image": "images/default.png",
         "priceName": "奖品",
         "totalRounds": 1,

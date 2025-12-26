@@ -12,6 +12,7 @@
 #include <QFile>
 #include "prizesettingdialog.h"
 #include <QMessageBox>
+#include <QCloseEvent>
 #include "xlsxdocument.h"
 
 Widget::Widget(QWidget *parent)
@@ -21,7 +22,7 @@ Widget::Widget(QWidget *parent)
     ui->setupUi(this);
 
     setFullBackground();
-    ui->joinCountLabel->hide();
+    m_lastClickTimer.start();
     m_clickTimer.invalidate(); // 初始化计时器为无效状态
     m_settingsClickCount = 0;
     this->showMaximized();
@@ -73,14 +74,22 @@ void Widget::savePrizeConfigToJson() {
         obj["image"] = c.image;
         obj["winnersPerRound"] = c.winnersPerRound;
         obj["totalRounds"] = c.totalRounds;
-        obj["allowUsedPeople"] = c.allowUsedPeople; // 存入 JSON
+        obj["allowUsedPeople"] = c.allowUsedPeople;
         array.append(obj);
     }
 
-    QFile file(QCoreApplication::applicationDirPath() + "/prizes.json");
-    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        file.write(QJsonDocument(array).toJson());
+    QString path = QCoreApplication::applicationDirPath() + "/prizes.json";
+    QFile file(path);
+
+    // 【关键修改】：使用 WriteOnly | Text | Truncate
+    // Truncate 会在打开文件时将其长度重置为零，确保旧数据被彻底删掉
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+        QJsonDocument doc(array);
+        file.write(doc.toJson());
         file.close();
+        qDebug() << "保存成功，当前奖项数量：" << m_prizes.size();
+    } else {
+        qDebug() << "无法写入文件，路径可能被占用或无权限：" << path;
     }
 }
 
@@ -107,8 +116,16 @@ void Widget::on_btnSettings_clicked()
         PrizeSettingDialog dialog(m_prizes, this);
         if (dialog.exec() == QDialog::Accepted) {
             m_prizes = dialog.getNewConfigs();
+            savePrizeConfigToJson();
+
+            // 【新增这几行】：一旦增加新奖项，立刻重置按钮和状态
+            ui->startDrawButton->setEnabled(true);
+            ui->startDrawButton->setText("开始抽奖");
+            m_isPendingPrizeSwitch = false;
 
             updatePrizeUI();
+            updateRoundUI();
+            loadHistoryFromTxt(); // 重新扫描历史，确定新奖项的进度
         }
     } else {
         // 可选：在控制台或者状态栏小提示，调试用，正式发布可以删掉
@@ -137,7 +154,7 @@ void Widget::loadPeopleCsv(const QString &path)
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         qWarning() << "无法打开 CSV 文件:" << path;
         // 如果找不到文件，显示一个友好的提示
-        ui->joinCountLabel->setText("参与人数: 0 (未找到people.csv)");
+        //ui->joinCountLabel->setText("参与人数: 0 (未找到people.csv)");
         return;
     }
 
@@ -166,14 +183,14 @@ void Widget::loadPeopleCsv(const QString &path)
     file.close();
 
     // 加载完后更新界面上的统计数字
-    ui->joinCountLabel->setText(QString("参与人数: %1").arg(m_people.size()));
+   // ui->joinCountLabel->setText(QString("参与人数: %1").arg(m_people.size()));
 }
 
 void Widget::loadPeopleExcel(const QString &path) {
     QXlsx::Document xlsx(path);
     if (!xlsx.load()) {
         qWarning() << "读取 Excel 失败，请检查路径:" << path;
-        ui->joinCountLabel->setText("参与人数: 0 (Excel文件加载失败)");
+        //ui->joinCountLabel->setText("参与人数: 0 (Excel文件加载失败)");
         return;
     }
 
@@ -201,7 +218,7 @@ void Widget::loadPeopleExcel(const QString &path) {
 
     // 更新界面：这里非常关键，只要 m_people 加载进来了，
     // 后面的 loadHistoryFromTxt 就会自动对比黑名单
-    ui->joinCountLabel->setText(QString("参与人数: %1").arg(m_people.size()));
+   // ui->joinCountLabel->setText(QString("参与人数: %1").arg(m_people.size()));
 }
 
 void Widget::loadPrizeConfig(const QString &path)
@@ -292,14 +309,36 @@ void Widget::resizeEvent(QResizeEvent *event)
     setFullBackground();
 }
 
+void Widget::closeEvent(QCloseEvent *event)
+{
+    // 创建一个询问对话框
+    QMessageBox::StandardButton resBtn = QMessageBox::question(
+        this,
+        "退出程序",
+        "确定要退出抽奖程序吗？\n(未保存的数据可能会丢失)",
+        QMessageBox::No | QMessageBox::Yes,
+        QMessageBox::Yes // 默认焦点在“是”上
+        );
+
+    if (resBtn != QMessageBox::Yes) {
+        // 如果用户点击了“否”，忽略关闭信号，窗口保持打开
+        event->ignore();
+    } else {
+        // 如果用户点击了“是”，接受信号，程序正常关闭
+        event->accept();
+    }
+}
+
+
 void Widget::onTimerTimeout()
 {
     if (m_currentPrizeIndex < 0) return;
     const PrizeConfig &currentPrize = m_prizes[m_currentPrizeIndex];
 
-    // 1. 准备实时滚动池
+    // 1. 准备可用人选池
     QVector<Person> pool;
     QSet<QString> peopleWonInThisPrize = getIdsFromCurrentSection(currentPrize);
+
     for (const Person &p : m_people) {
         if (currentPrize.allowUsedPeople) {
             if (!peopleWonInThisPrize.contains(p.employeeId)) pool.append(p);
@@ -310,24 +349,45 @@ void Widget::onTimerTimeout()
 
     if (pool.isEmpty()) return;
 
-    // 2. 计算实际能滚动的框
-    int actualScrollCount = qMin((int)m_dynamicLabels.size(), pool.size());
+    // 2. 核心逻辑：洗牌（Shuffle）
+    // 将整个池子的顺序打乱，确保我们取出的前 N 个人是不重复的
+    std::shuffle(pool.begin(), pool.end(), *QRandomGenerator::global());
 
-    for (int i = 0; i < m_dynamicLabels.size(); ++i) {
+    // 3. 计算实际显示的格子数
+    int displayCount = m_dynamicLabels.size();
+    int actualScrollCount = qMin(displayCount, (int)pool.size());
+
+    // 4. 分配名单
+    for (int i = 0; i < displayCount; ++i) {
         if (i < actualScrollCount) {
             m_dynamicLabels[i]->show();
-            int randomIdx = QRandomGenerator::global()->bounded(pool.size());
-            Person p = pool[randomIdx];
-            m_dynamicLabels[i]->setText(QString("%1\n%2").arg(p.name).arg(p.employeeId));
-            // 滚动时的样式也要带上字体大小
-            m_dynamicLabels[i]->setStyleSheet("font-size: 28px; font-weight: bold; color: #333333; background-color: rgba(255, 255, 255, 200); border-radius: 10px;");
+            Person p = pool[i]; // 因为池子已经洗过牌，pool[0], pool[1]... 绝对互不相同
+
+
+            // 保持原样：名字 + 换行 + 工号
+            // m_dynamicLabels[i]->setText(QString("%1\n%2").arg(p.name).arg(p.employeeId));
+
+            m_dynamicLabels[i]->setText(QString(
+                                            "<html><center>%1<br/>"
+                                            "<span style='font-size:18px; font-weight:normal;'>%2</span>"
+                                            "</center></html>"
+                                            ).arg(p.name).arg(p.employeeId));
+            // 样式保持大字号（36px）
+            m_dynamicLabels[i]->setStyleSheet(
+                "font-size: 36px; "
+                "font-weight: bold; "
+                "color: #333333; "
+                "background-color: rgba(255, 255, 255, 200); "
+                "border: 3px solid transparent; " // 关键：滚动时也占着3px边框位置，只是透明
+                "border-radius: 10px; "
+                "min-height: 120px; "             // 关键：给一个固定的最小高度
+                "min-width: 200px;"
+                );
         } else {
-            // 多余的框在滚动阶段就直接隐藏
             m_dynamicLabels[i]->hide();
         }
     }
 }
-
 // 核心逻辑 A：确定最终名单
 void Widget::drawFinalWinners()
 {
@@ -357,6 +417,12 @@ void Widget::drawFinalWinners()
             int r = QRandomGenerator::global()->bounded(pool.size());
             Person winner = pool.takeAt(r);
 
+            m_dynamicLabels[i]->setText(QString(
+                                            "<html><center>%1<br/>"
+                                            "<span style='font-size:18px; font-weight:normal;'>%2</span>"
+                                            "</center></html>"
+                                            ).arg(winner.name).arg(winner.employeeId));
+
             // 如果不是全员抽，才加入全局黑名单
             if (!currentPrize.allowUsedPeople) {
                 m_usedPeople.insert(winner.employeeId);
@@ -365,15 +431,16 @@ void Widget::drawFinalWinners()
 
             // 更新 UI，并强制固定字体大小
             m_dynamicLabels[i]->show();
-            m_dynamicLabels[i]->setText(QString("%1\n%2").arg(winner.name).arg(winner.employeeId));
+            //m_dynamicLabels[i]->setText(QString("%1\n%2").arg(winner.name).arg(winner.employeeId));
             m_dynamicLabels[i]->setStyleSheet(
-                "background-color: #FFFACD; "
-                "border: 3px solid #E60000; "
-                "border-radius: 10px; "
-                "font-size: 28px; "  // 强制大字体
+                "font-size: 36px; "
                 "font-weight: bold; "
-                "color: #E60000; "
-                "min-height: 100px;"
+                "color: #E60000; "                // 变色
+                "background-color: #FFFACD; "     // 背景变黄
+                "border: 3px solid #E60000; "     // 边框显现
+                "border-radius: 10px; "
+                "min-height: 120px; "             // 必须与滚动时一致
+                "min-width: 200px;"
                 );
         } else {
             // 【核心修复】多出来的框，直接隐藏
@@ -528,7 +595,7 @@ void Widget::loadHistoryFromTxt() {
     bool found = false;
     for (int i = 0; i < m_prizes.size(); ++i) {
         const auto &config = m_prizes[i];
-        QString key = QString("%1-%2").arg(config.displayName, config.priceName);
+        QString key = QString("%1-%2").arg(config.displayName).arg(config.priceName);
         if (config.allowUsedPeople) key += "(All)";
 
         int drawn = prizeCountMap.value(key, 0);
@@ -544,17 +611,36 @@ void Widget::loadHistoryFromTxt() {
 
     // (剩余 UI 更新代码保持不变)
     if (!found) {
-        m_currentPrizeIndex = 0;
-        m_currentRound = 1;
+        // 【关键点 1】：如果全部抽完了，停留在最后一个奖项，不要回滚到 0
+        m_currentPrizeIndex = m_prizes.size() - 1;
+        m_currentRound = m_prizes.last().totalRounds;
+
+        // 【关键点 2】：锁定按钮，防止用户在抽完的状态下再次触发
+        ui->startDrawButton->setEnabled(false);
+        ui->startDrawButton->setText("全部奖项已抽完");
+
+        qDebug() << "读档结果：所有奖项均已抽完，按钮已禁用。";
+    } else {
+        // 找到了没抽完的进度，正常激活按钮
+        ui->startDrawButton->setEnabled(true);
+        ui->startDrawButton->setText("开始抽奖");
+
+        qDebug() << "读档结果：恢复至" << m_prizes[m_currentPrizeIndex].displayName
+                 << " 第" << m_currentRound << "轮";
     }
-    ui->startDrawButton->setEnabled(true);
-    ui->startDrawButton->setText("开始抽奖");
     updatePrizeUI();
     updateRoundUI();
 }
 
 void Widget::on_startDrawButton_clicked()
 {
+    if (m_lastClickTimer.elapsed() < 1000) {
+        qDebug() << "点击太快了，操作已拦截";
+        m_lastClickTimer.restart();
+        return;
+    }
+    m_lastClickTimer.restart();
+
     // 辅助逻辑：获取当前奖项真正的可用人数
     auto getAvailablePoolSize = [&]() -> int {
         if (m_currentPrizeIndex < 0 || m_currentPrizeIndex >= m_prizes.size()) return 0;
@@ -619,7 +705,7 @@ void Widget::on_startDrawButton_clicked()
             if (m_currentPrizeIndex < m_prizes.size() - 1) {
                 m_isPendingPrizeSwitch = true;
                 QString nextPrizeName = m_prizes[m_currentPrizeIndex + 1].displayName;
-                ui->startDrawButton->setText("切换至：" + nextPrizeName);
+                ui->startDrawButton->setText("点击进入：" + nextPrizeName);
             } else {
                 ui->startDrawButton->setText("全部抽奖结束");
                 ui->startDrawButton->setEnabled(false);
@@ -633,17 +719,18 @@ void Widget::on_startDrawButton_clicked()
         // 3. 还有人，准备下一轮
         else {
             m_currentRound++;
+            updateRoundUI(); // 点击停止后，顶部立刻显示“第 2 / 3 轮”，让用户知道下一轮要开始了
             if (availableAfterDraw < current.winnersPerRound) {
                 ui->startDrawButton->setText(QString("准备下轮(剩%1人)").arg(availableAfterDraw));
             } else {
-                ui->startDrawButton->setText("准备下一轮");
+                ui->startDrawButton->setText("下一轮抽奖");
             }
         }
 
         // 更新左下角参与人数标签
         int globalUnused = 0;
         for (const Person &p : m_people) if (!m_usedPeople.contains(p.employeeId)) globalUnused++;
-        ui->joinCountLabel->setText(QString("参与人数: %1").arg(globalUnused));
+       // ui->joinCountLabel->setText(QString("参与人数: %1").arg(globalUnused));
         return;
     }
 
@@ -672,7 +759,7 @@ void Widget::on_startDrawButton_clicked()
 
         prepareDynamicLabels(availableCount);
 
-        m_timer->start(50);
+        m_timer->start(100);
     }
 }
 
@@ -705,17 +792,15 @@ void Widget::prepareDynamicLabels(int availableCount)
         label->setAlignment(Qt::AlignCenter);
 
         // 设置名牌样式
-        label->setStyleSheet(
-            "QLabel {"
-            "  background-color: rgba(255, 255, 255, 220);"
-            "  border: 2px solid #FFD700;"
-            "  border-radius: 10px;"
-            "  font-size: 24px;"
-            "  font-weight: bold;"
-            "  color: #333333;"
-            "  min-height: 100px;"
-            "}"
-            );
+        QString baseStyle =
+            "border: 3px solid #FFD700; "   // 始终保持3px边框，防止抖动
+            "border-radius: 10px; "
+            "font-size: 36px; "
+            "font-weight: bold; "
+            "min-height: 120px; "           // 固定高度
+            "min-width: 220px; "            // 固定宽度
+            "background-color: rgba(255, 255, 255, 220); "
+            "color: #333333;";
 
         // 每行最多3个的计算逻辑
         layout->addWidget(label, i / 3, i % 3);

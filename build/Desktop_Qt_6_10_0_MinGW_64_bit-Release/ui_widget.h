@@ -28,20 +28,20 @@ public:
     QHBoxLayout *horizontalLayout;
     QWidget *leftPanel;
     QGridLayout *gridLayout;
-    QVBoxLayout *verticalLayout_2;
-    QLabel *prizeLevelLabel;
-    QLabel *joinCountLabel;
-    QSpacerItem *spacerItem;
+    QLabel *roundLabel;
+    QSpacerItem *horizontalSpacer;
+    QPushButton *startDrawButton;
     QWidget *prizeContainer;
     QVBoxLayout *prizeVLayout;
     QLabel *giftLabel;
     QLabel *prizeNameLabel;
-    QSpacerItem *spacerItem1;
-    QLabel *roundLabel;
     QSpacerItem *verticalSpacer;
-    QPushButton *startDrawButton;
+    QSpacerItem *verticalSpacer_3;
     QPushButton *btnSettings;
-    QSpacerItem *horizontalSpacer;
+    QSpacerItem *spacerItem;
+    QVBoxLayout *verticalLayout_2;
+    QLabel *prizeLevelLabel;
+    QSpacerItem *verticalSpacer_2;
     QWidget *rightPanel;
     QGridLayout *gridLayout_2;
     QVBoxLayout *verticalLayout;
@@ -82,34 +82,33 @@ public:
 "      "));
         gridLayout = new QGridLayout(leftPanel);
         gridLayout->setObjectName("gridLayout");
-        verticalLayout_2 = new QVBoxLayout();
-        verticalLayout_2->setObjectName("verticalLayout_2");
-        prizeLevelLabel = new QLabel(leftPanel);
-        prizeLevelLabel->setObjectName("prizeLevelLabel");
-        prizeLevelLabel->setMinimumSize(QSize(0, 88));
-        prizeLevelLabel->setStyleSheet(QString::fromUtf8("\n"
-"            font-family: \"Microsoft YaHei\"; font-size: 48px; font-weight: 900; color: #ffffff;\n"
-"           "));
-        prizeLevelLabel->setAlignment(Qt::AlignmentFlag::AlignCenter);
+        roundLabel = new QLabel(leftPanel);
+        roundLabel->setObjectName("roundLabel");
+        roundLabel->setStyleSheet(QString::fromUtf8("\n"
+"          font-size: 28px; color: #ff0000; font-weight: bold;\n"
+"         "));
+        roundLabel->setAlignment(Qt::AlignmentFlag::AlignCenter);
 
-        verticalLayout_2->addWidget(prizeLevelLabel);
+        gridLayout->addWidget(roundLabel, 4, 0, 1, 3);
 
-        joinCountLabel = new QLabel(leftPanel);
-        joinCountLabel->setObjectName("joinCountLabel");
-        joinCountLabel->setMinimumSize(QSize(0, 66));
-        joinCountLabel->setStyleSheet(QString::fromUtf8("\n"
-"            font-size: 22px; color: rgba(255,255,255,0.8); font-weight: bold;\n"
-"           "));
-        joinCountLabel->setAlignment(Qt::AlignmentFlag::AlignCenter);
+        horizontalSpacer = new QSpacerItem(391, 20, QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Minimum);
 
-        verticalLayout_2->addWidget(joinCountLabel);
+        gridLayout->addItem(horizontalSpacer, 9, 2, 1, 1);
 
+        startDrawButton = new QPushButton(leftPanel);
+        startDrawButton->setObjectName("startDrawButton");
+        startDrawButton->setMinimumSize(QSize(0, 90));
+        startDrawButton->setStyleSheet(QString::fromUtf8("\n"
+"          QPushButton {\n"
+"              background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #feca57, stop:1 #ff9f43);\n"
+"              color: #2d3436; font-size: 36px; font-weight: bold;\n"
+"              border-radius: 45px; border-bottom: 5px solid #e67e22;\n"
+"          }\n"
+"          QPushButton:hover { background: #ffbd4a; }\n"
+"          QPushButton:pressed { border-bottom: 1px solid #e67e22; margin-top: 4px; }\n"
+"         "));
 
-        gridLayout->addLayout(verticalLayout_2, 0, 0, 1, 3);
-
-        spacerItem = new QSpacerItem(0, 0, QSizePolicy::Policy::Minimum, QSizePolicy::Policy::Expanding);
-
-        gridLayout->addItem(spacerItem, 1, 0, 1, 3);
+        gridLayout->addWidget(startDrawButton, 8, 0, 1, 3);
 
         prizeContainer = new QWidget(leftPanel);
         prizeContainer->setObjectName("prizeContainer");
@@ -129,7 +128,7 @@ public:
         prizeNameLabel = new QLabel(prizeContainer);
         prizeNameLabel->setObjectName("prizeNameLabel");
         QPalette palette;
-        QBrush brush(QColor(255, 0, 0, 255));
+        QBrush brush(QColor(255, 255, 255, 255));
         brush.setStyle(Qt::BrushStyle::SolidPattern);
         palette.setBrush(QPalette::ColorGroup::Active, QPalette::ColorRole::WindowText, brush);
         QBrush brush1(QColor(0, 0, 0, 0));
@@ -139,7 +138,7 @@ public:
         palette.setBrush(QPalette::ColorGroup::Active, QPalette::ColorRole::ButtonText, brush);
         palette.setBrush(QPalette::ColorGroup::Active, QPalette::ColorRole::Base, brush1);
         palette.setBrush(QPalette::ColorGroup::Active, QPalette::ColorRole::Window, brush1);
-        QBrush brush2(QColor(255, 0, 0, 128));
+        QBrush brush2(QColor(255, 255, 255, 128));
         brush2.setStyle(Qt::BrushStyle::SolidPattern);
 #if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
         palette.setBrush(QPalette::ColorGroup::Active, QPalette::ColorRole::PlaceholderText, brush2);
@@ -164,47 +163,23 @@ public:
 #endif
         prizeNameLabel->setPalette(palette);
         prizeNameLabel->setStyleSheet(QString::fromUtf8("\n"
-"             font-size: 42px; color: #FF0000; font-weight: bold;\n"
+"             font-size: 42px; color: #FFffff; font-weight: bold;\n"
 "             background: transparent;\n"
 "            "));
         prizeNameLabel->setAlignment(Qt::AlignmentFlag::AlignCenter);
 
         prizeVLayout->addWidget(prizeNameLabel);
 
-
-        gridLayout->addWidget(prizeContainer, 3, 0, 1, 3);
-
-        spacerItem1 = new QSpacerItem(0, 0, QSizePolicy::Policy::Minimum, QSizePolicy::Policy::Expanding);
-
-        gridLayout->addItem(spacerItem1, 4, 0, 1, 3);
-
-        roundLabel = new QLabel(leftPanel);
-        roundLabel->setObjectName("roundLabel");
-        roundLabel->setStyleSheet(QString::fromUtf8("\n"
-"          font-size: 28px; color: #ffffff; font-weight: bold;\n"
-"         "));
-        roundLabel->setAlignment(Qt::AlignmentFlag::AlignCenter);
-
-        gridLayout->addWidget(roundLabel, 5, 0, 1, 3);
-
         verticalSpacer = new QSpacerItem(20, 40, QSizePolicy::Policy::Minimum, QSizePolicy::Policy::Expanding);
 
-        gridLayout->addItem(verticalSpacer, 6, 0, 1, 1);
+        prizeVLayout->addItem(verticalSpacer);
 
-        startDrawButton = new QPushButton(leftPanel);
-        startDrawButton->setObjectName("startDrawButton");
-        startDrawButton->setMinimumSize(QSize(0, 90));
-        startDrawButton->setStyleSheet(QString::fromUtf8("\n"
-"          QPushButton {\n"
-"              background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #feca57, stop:1 #ff9f43);\n"
-"              color: #2d3436; font-size: 36px; font-weight: bold;\n"
-"              border-radius: 45px; border-bottom: 5px solid #e67e22;\n"
-"          }\n"
-"          QPushButton:hover { background: #ffbd4a; }\n"
-"          QPushButton:pressed { border-bottom: 1px solid #e67e22; margin-top: 4px; }\n"
-"         "));
+        verticalSpacer_3 = new QSpacerItem(20, 40, QSizePolicy::Policy::Minimum, QSizePolicy::Policy::Expanding);
 
-        gridLayout->addWidget(startDrawButton, 7, 0, 1, 3);
+        prizeVLayout->addItem(verticalSpacer_3);
+
+
+        gridLayout->addWidget(prizeContainer, 2, 0, 1, 3);
 
         btnSettings = new QPushButton(leftPanel);
         btnSettings->setObjectName("btnSettings");
@@ -226,22 +201,46 @@ public:
 "    background-color: rgba(200, 200, 200, 100);\n"
 "}"));
 
-        gridLayout->addWidget(btnSettings, 8, 1, 1, 1);
+        gridLayout->addWidget(btnSettings, 9, 1, 1, 1);
 
-        horizontalSpacer = new QSpacerItem(391, 20, QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Minimum);
+        spacerItem = new QSpacerItem(0, 0, QSizePolicy::Policy::Minimum, QSizePolicy::Policy::Expanding);
 
-        gridLayout->addItem(horizontalSpacer, 8, 2, 1, 1);
+        gridLayout->addItem(spacerItem, 3, 0, 1, 3);
+
+        verticalLayout_2 = new QVBoxLayout();
+        verticalLayout_2->setObjectName("verticalLayout_2");
+        prizeLevelLabel = new QLabel(leftPanel);
+        prizeLevelLabel->setObjectName("prizeLevelLabel");
+        QSizePolicy sizePolicy1(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Preferred);
+        sizePolicy1.setHorizontalStretch(0);
+        sizePolicy1.setVerticalStretch(4);
+        sizePolicy1.setHeightForWidth(prizeLevelLabel->sizePolicy().hasHeightForWidth());
+        prizeLevelLabel->setSizePolicy(sizePolicy1);
+        prizeLevelLabel->setMinimumSize(QSize(0, 158));
+        prizeLevelLabel->setStyleSheet(QString::fromUtf8("\n"
+"            font-family: \"Microsoft YaHei\"; font-size: 48px; font-weight: 900; color: #ffffff;\n"
+"           "));
+        prizeLevelLabel->setAlignment(Qt::AlignmentFlag::AlignCenter);
+
+        verticalLayout_2->addWidget(prizeLevelLabel);
+
+
+        gridLayout->addLayout(verticalLayout_2, 0, 0, 1, 3);
+
+        verticalSpacer_2 = new QSpacerItem(20, 40, QSizePolicy::Policy::Minimum, QSizePolicy::Policy::Expanding);
+
+        gridLayout->addItem(verticalSpacer_2, 5, 0, 1, 1);
 
 
         horizontalLayout->addWidget(leftPanel);
 
         rightPanel = new QWidget(Widget);
         rightPanel->setObjectName("rightPanel");
-        QSizePolicy sizePolicy1(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Expanding);
-        sizePolicy1.setHorizontalStretch(6);
-        sizePolicy1.setVerticalStretch(0);
-        sizePolicy1.setHeightForWidth(rightPanel->sizePolicy().hasHeightForWidth());
-        rightPanel->setSizePolicy(sizePolicy1);
+        QSizePolicy sizePolicy2(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Expanding);
+        sizePolicy2.setHorizontalStretch(6);
+        sizePolicy2.setVerticalStretch(0);
+        sizePolicy2.setHeightForWidth(rightPanel->sizePolicy().hasHeightForWidth());
+        rightPanel->setSizePolicy(sizePolicy2);
         rightPanel->setStyleSheet(QString::fromUtf8("\n"
 "       QWidget#rightPanel {\n"
 "           background: rgba(255, 255, 255, 0.1);\n"
@@ -256,7 +255,7 @@ public:
         verticalLayout->setSizeConstraint(QLayout::SizeConstraint::SetFixedSize);
         rightTitle = new QLabel(rightPanel);
         rightTitle->setObjectName("rightTitle");
-        rightTitle->setMinimumSize(QSize(0, 88));
+        rightTitle->setMinimumSize(QSize(0, 158));
         rightTitle->setStyleSheet(QString::fromUtf8("\n"
 "            font-family: \"Microsoft YaHei\"; font-size: 48px; font-weight: 900; color: #ffffff;\n"
 "           "));
@@ -285,12 +284,11 @@ public:
     void retranslateUi(QWidget *Widget)
     {
         Widget->setWindowTitle(QCoreApplication::translate("Widget", "\345\271\270\350\277\220\346\212\275\345\245\226", nullptr));
-        prizeLevelLabel->setText(QCoreApplication::translate("Widget", "\342\200\224 \344\270\200\347\255\211\345\245\226 \342\200\224", nullptr));
-        joinCountLabel->setText(QCoreApplication::translate("Widget", "\345\217\202\344\270\216\344\272\272\346\225\260: 6,748", nullptr));
-        prizeNameLabel->setText(QCoreApplication::translate("Widget", "\350\213\271\346\236\234\346\211\213\346\234\272", nullptr));
         roundLabel->setText(QCoreApplication::translate("Widget", "\347\254\254 2 / 3 \350\275\256", nullptr));
         startDrawButton->setText(QCoreApplication::translate("Widget", "\347\253\213\345\215\263\345\274\200\345\245\226", nullptr));
+        prizeNameLabel->setText(QCoreApplication::translate("Widget", "\350\213\271\346\236\234\346\211\213\346\234\272", nullptr));
         btnSettings->setText(QCoreApplication::translate("Widget", "\345\245\226\351\241\271\351\205\215\347\275\256", nullptr));
+        prizeLevelLabel->setText(QCoreApplication::translate("Widget", "\342\200\224 \344\270\200\347\255\211\345\245\226 \342\200\224", nullptr));
         rightTitle->setText(QCoreApplication::translate("Widget", "\345\200\231\351\200\211\345\220\215\345\215\225", nullptr));
         groupBox->setTitle(QString());
     } // retranslateUi
